@@ -25,8 +25,7 @@ def solveiLQR(QList, RList, qlist, rlist, A, B, P, p):
         dlist.insert(0,d)
         p = (-2*np.transpose(d)@RList[H-i-1]@K + qlist[H-i-1] - np.transpose(rlist[H-i-1])@K + 2*np.transpose(B@d)@P@(A-B@K)+p@(A-B@K))
         P = QList[H-i-1] + np.transpose(K)@RList[H-i-1]@K + (np.transpose(A+B@K))@P@(A+B@K)
-    return Klist, dlist
-
+        return Klist, dlist
 def solveiLQRv2(QList, RList, qlist, rlist, A, B, P, p):
     K = []
     d = []
@@ -160,7 +159,6 @@ while(abs(cost-lastcost)>1):
         else:
             Qlis.append(Q)
             qlis.append(np.array([0,0]))
-            
         xlist.append(xt)
         j += 1
         print("total cost: ", cost)
@@ -169,7 +167,6 @@ while(abs(cost-lastcost)>1):
         bestx = xlist
         klis, dlis = solveiLQRv2(Qlis,Rlis,qlis,rlis,A,B,Q,np.zeros(2))
 
-    
 
 
 fig, ax = plt.subplots()
