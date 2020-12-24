@@ -35,9 +35,9 @@ def on_draw():
 
 def update_pos(dt):
     msg = connection.recv()
-    print(msg)
-    robot.x += msg[0]
-    robot.y += msg[1]
+    robot.x = msg[0]*pix2inch
+    robot.y = msg[1]*pix2inch
+    robot.rotation = msg[2]
 
 
 if __name__ == '__main__':
