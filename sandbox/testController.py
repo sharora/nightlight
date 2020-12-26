@@ -9,11 +9,18 @@ client = Client(address, authkey=b'Ok Boomer!')
 robot = MecanumRobotDynamics(40,100)
 
 x = np.array([110, 20, 45, 0, 0, 0])
-k = 3*np.array([[1, 0, 0, 1, 0, 0],
-             [0, 1, 0, 0, 1, 0],
-             [0, 0, 1, 0, 0, 1]])
+k = 10*np.array([[1, 0, 0, 0.5, 0, 0],
+             [0, 1, 0, 0, 0.5, 0],
+             [0, 0, 1, 0, 0, 0.5]])
 
 xtarg = np.array([72, 72, 90, 0, 0 ,0])
+
+
+
+
+def solveLQR(A, B, Q, R, H):
+    pass
+
 while(True):
     #testing simple control law
     u = k@(xtarg - x)

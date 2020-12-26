@@ -41,5 +41,5 @@ def update_pos(dt):
 
 
 if __name__ == '__main__':
-    pyglet.clock.schedule_interval(update_pos, 1/120.0)
+    pyglet.clock.schedule_interval(update_pos, 1/50.0)
     pyglet.app.run()
