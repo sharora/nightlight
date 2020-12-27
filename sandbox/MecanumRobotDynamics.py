@@ -30,6 +30,24 @@ class MecanumRobotDynamics(object):
         delta  = (A @ robotstate + B @ controls) * dt
         robotstate = robotstate + delta
         return robotstate
+    def getA(self):
+        A = np.array([[0, 0, 0, 1, 0, 0],
+                      [0, 0, 0, 0, 1, 0],
+                      [0, 0, 0, 0, 0, 1],
+                      [0, 0, 0, -0.5, 0, 0],
+                      [0, 0, 0, 0, -0.5, 0],
+                      [0, 0, 0, 0, 0, -0.5]])
+        return A
+    def getB(self):
+        B = np.array([[0,0,0],
+                      [0,0,0],
+                      [0,0,0],
+                      [1,0,0],
+                      [0,1,0],
+                      [0,0,1]])
+        return B
+
+
 
 
 
