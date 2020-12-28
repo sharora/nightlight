@@ -10,6 +10,7 @@ class CircularObstacle(object):
         self._penalty = penalty
 
     def getCost(self, robotstate, robotradius):
+        #TODO make cost function incorporate radius
         #add cost function that is inversely proportional to distance
         # clips to zero, when robot is outside radius
         x = self._x - robotstate[0]

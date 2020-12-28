@@ -55,7 +55,7 @@ for i in range(H):
     x = robot.step(x, u, interval)
     totalcost += obst1.getCost(x, 9)
     hess = obst1.getCostHessian(x, 9)
-    if(not np.all(np.linalg.eigvals(hess) >= 0)):
+    if(not np.all(np.linalg.eigvals(hess) > 0)):
         print(hess)
     # for watching random walk process
     # client.send([random.randrange(11)-5, random.randrange(11)-5])
