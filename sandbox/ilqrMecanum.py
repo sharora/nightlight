@@ -112,19 +112,17 @@ for i in range(H):
     qlis.append(np.zeros(2))
     rlis.append(np.zeros(2))
     klis, dlis = solveiLQRv2(Qlis,Rlis,qlis,rlis,A,B,Q,np.zeros(2))
-    print(klis)
 
 # k2, d2 = solveiLQRv2(Qlis,Rlis,qlis,rlis,A,B,10*Q,np.zeros(2))
 # print(k2, d2)
 # print(klis,dlis)
-alpha = 30
+alpha = 300
 beta = 1/((obstradius)**2)
 
 numiterations = 100
 xlist = []
 u = []
 
-lineSearchConst = 1
 
 bestx = []
 lowestcost = 10000000
@@ -145,27 +143,30 @@ while(abs(cost-lastcost)>1):
     xlist.append(x0)
     for i in range(H):
         if(j != 0):
-            ut = -klis[i]@(lastxlist[i]-xt) + dlis[i] + u[i]
+            # ut = -klis[i]@(lastxlist[i]-xt) + dlis[i] + u[i]
+            ut = -klis[i]@(xf-xt) + dlis[i]
             u[i] = ut
         else:
             ut = -klis[i]@(xf-xt) + dlis[i]
             u.append(ut)
-            xt = A@xt + B@ut
-            cost += computecost(alpha,beta,obstacle[0],obstacle[1],xt[0],xt[1]) + np.transpose(xt)@Q@xt 
+
+        xt = A@xt + B@ut
+        cost += np.transpose(xt)@Q@xt + np.transpose(ut)@R@ut
 
         if(np.linalg.norm(xt-obstacle)<obstradius+1):
             Qlis.append(Q + computeHessian(alpha,beta,obstacle[0],obstacle[1],xt[0],xt[1]))
-            qlis.append(computeGradient(alpha,beta,obstacle[0],obstacle[1],xt[0],xt[1]))
+            qlis.append(computeGradient(alpha,beta,obstacle[0],obstacle[1],xt[0],xt[1]) - 2*np.transpose(xt)@Q)
+            cost += computecost(alpha,beta,obstacle[0],obstacle[1],xt[0],xt[1])
         else:
             Qlis.append(Q)
             qlis.append(np.array([0,0]))
         xlist.append(xt)
-        j += 1
-        print("total cost: ", cost)
+    j += 1
+    print("total cost: ", cost)
+    klis, dlis = solveiLQRv2(Qlis,Rlis,qlis,rlis,A,B,Q,np.zeros(2))
     if(cost<lowestcost):
         lowestcost = cost
         bestx = xlist
-        klis, dlis = solveiLQRv2(Qlis,Rlis,qlis,rlis,A,B,Q,np.zeros(2))
 
 
 
@@ -181,8 +182,9 @@ ax.set_aspect('equal', adjustable='datalim')
 for state in xlist:
     xlis.append(state[0])
     ylis.append(state[1])
-    plt.plot(xlis,ylis)
-    plt.show()
+
+plt.plot(xlis,ylis)
+plt.show()
 
 
 
