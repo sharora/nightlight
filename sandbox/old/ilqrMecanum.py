@@ -47,13 +47,12 @@ def solveiLQRv2(QList, RList, qlist, rlist, A, B, P, p):
         #finding inverse of the second partial with respect to control u
         Q_uu_inv = np.linalg.inv(Q_uu)
 
-        # 5b) k = -np.dot(Q_uu^-1, Q_u)
+        # k = -np.dot(Q_uu^-1, Q_u)
         d.insert(0,-np.dot(Q_uu_inv, Q_u))
         K.insert(0,-np.dot(Q_uu_inv, Q_ux))
 
         #updating cost to go approximations
         V_x = Q_x - np.dot(K[0].T, np.dot(Q_uu, d[0]))
-        # 6c) V_xx = Q_xx - np.dot(-K^T, np.dot(Q_uu, K))
         V_xx = Q_xx - np.dot(K[0].T, np.dot(Q_uu, K[0]))
 
     return K,d

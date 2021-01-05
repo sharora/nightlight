@@ -44,7 +44,7 @@ class CircularObstacle(object):
 
         #checking if the obstacle and the circle the robot is bounded by intersect
         if(d < (self._radius + robotradius)):
-            grad = (self._penalty/self._radius) * np.array([-(math.e ** (-d))*(x)/(math.sqrt(x**2 + y**2)), -(math.e ** (-d))*(y)/(math.sqrt(x**2 + y**2))])
+            grad = (self._penalty/self._radius) * np.array([-(math.e ** (-d))*(x)/(math.sqrt(x**2 + y**2)), -(math.e ** (-d))*(y)/(math.sqrt(x**2 + y**2)), 0,0,0,0])
             return grad
         else:
             return np.zeros(6)
