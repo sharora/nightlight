@@ -7,6 +7,7 @@ class CircularObstacle(object):
         self._x = x
         self._y = y
         self._radius = radius
+        self._a = 2*radius
         self._penalty = penalty
 
     def getCost(self, robotstate, robotradius):
@@ -28,7 +29,7 @@ class CircularObstacle(object):
 
         #checking if the obstacle and the circle the robot is bounded by intersect
         if(d < (self._radius + robotradius)):
-            return self._penalty * (math.e) ** (-d)
+            return self._penalty * (math.e) ** (-1/self._a * (d**2))
         else:
             return 0
     def getCostGradient(self, robotstate, robotradius):
@@ -44,7 +45,9 @@ class CircularObstacle(object):
 
         #checking if the obstacle and the circle the robot is bounded by intersect
         if(d < (self._radius + robotradius)):
-            grad = (self._penalty/self._radius) * np.array([-(math.e ** (-d))*(x)/(math.sqrt(x**2 + y**2)), -(math.e ** (-d))*(y)/(math.sqrt(x**2 + y**2)), 0,0,0,0])
+            # grad = (self._penalty/self._radius) * np.array([-(math.e ** (-d))*(x)/(math.sqrt(x**2 + y**2)), -(math.e ** (-d))*(y)/(math.sqrt(x**2 + y**2)), 0,0,0,0])
+            cost = self.getCost(robotstate, robotradius)
+            grad = -2 / self._a*np.array([cost*x, cost*y, 0, 0,0,0])
             return grad
         else:
             return np.zeros(6)
@@ -65,13 +68,18 @@ class CircularObstacle(object):
         #checking if the obstacle and the circle the robot is bounded by intersect
         if(d < (self._radius + robotradius)):
             h = np.zeros((6,6))
-            denominator = (((math.sqrt(x**2 + y**2)) ** 3) *(self._radius**2))
-            h[0][0] = ((math.e**(-d))*(x**2)*(math.sqrt(x**2 + y**2)) - self._radius*(math.e**(-d))*(y**2))/denominator
-            h[0][1] = x*((math.e**(-d))*y*(math.sqrt(x**2 + y**2)) + self._radius*(math.e**(-d))*y)/denominator
-            h[1][0] = x*((math.e**(-d))*y*(math.sqrt(x**2 + y**2)) + self._radius*(math.e**(-d))*y)/denominator
-            h[1][1] = ((math.e**(-d))*(y**2)*(math.sqrt(x**2 + y**2)) - self._radius*(math.e**(-d))*(x**2))/denominator
+            # denominator = (((math.sqrt(x**2 + y**2)) ** 3) *(self._radius**2))
+            # h[0][0] = ((math.e**(-d))*(x**2)*(math.sqrt(x**2 + y**2)) - self._radius*(math.e**(-d))*(y**2))/denominator
+            # h[0][1] = x*((math.e**(-d))*y*(math.sqrt(x**2 + y**2)) + self._radius*(math.e**(-d))*y)/denominator
+            # h[1][0] = x*((math.e**(-d))*y*(math.sqrt(x**2 + y**2)) + self._radius*(math.e**(-d))*y)/denominator
+            # h[1][1] = ((math.e**(-d))*(y**2)*(math.sqrt(x**2 + y**2)) - self._radius*(math.e**(-d))*(x**2))/denominator
 
-            h = self._penalty * h
+            # h = self._penalty * h
+            cost = self.getCost(robotstate, robotradius)
+            h[0][0] = (4*(x**2) - 2*self._a)/(self._a**2) * cost
+            h[0][1] = (4*x*y)/(self._a**2)*cost
+            h[1][0] = (4*x*y)/(self._a**2)*cost
+            h[1][1] = (4*(y**2) - 2*self._a)/(self._a**2) * cost
             return h
         else:
             return np.zeros((6,6))
