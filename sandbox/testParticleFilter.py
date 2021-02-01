@@ -5,6 +5,8 @@ from MecanumRobotDynamics import MecanumRobotDynamics
 from obstacle import CircularObstacle
 from particle import Particle
 import math
+import random
+from scipy.stats import rv_discrete
 
 address = ('localhost', 6000)
 client = Client(address, authkey=b'Ok Boomer!')
@@ -12,7 +14,11 @@ client = Client(address, authkey=b'Ok Boomer!')
 robot = MecanumRobotDynamics(40,100)
 
 #initializing start and target states
-x0 = np.array([72, 72, 90, 20, 20, 0])
+x0 = np.array([71, 71, 90, 0, 0, 0])
+xtarg = np.array([130, 71, 90, 0, 0 ,0])
+k = 5*np.array([[1, 0, 0, 0.5, 0, 0],
+             [0, 1, 0, 0, 0.5, 0],
+             [0, 0, 1, 0, 0, 0.e5]])
 
 #in seconds
 # time = 3
@@ -29,7 +35,7 @@ def gaussianPDF(mu, point, sigma):
 
 
 numberOfParticles = 100
-measureskip = 50
+measureskip = 10
 
 particleList = []
 for i in range(numberOfParticles):
@@ -43,10 +49,14 @@ xt = x0
 count = 0
 while(True):
     normalization = 0
-    xt = robot.step(xt, np.zeros(3), dt)
+    weightgm = 1
+    weightlist = []
+    indexlist = []
+    u = -k @ (xt - xtarg)
+    xt = robot.step(xt, u, dt)
     z = sampleMeasurement(xt, 10)
     for i in range(numberOfParticles):
-        particleList[i]._x = robot.stochasticstep(particleList[i]._x, np.zeros(3), dt)
+        particleList[i]._x = robot.stochasticstep(particleList[i]._x, u, dt)
         #calculating new weight: p(zt | x_t_i)
 
         if(count % measureskip == 0):
@@ -58,8 +68,25 @@ while(True):
         #normalizing the weights
         for i in range(numberOfParticles):
             particleList[i]._w = particleList[i]._w / normalization
+            indexlist.append(i)
+            weightlist.append(particleList[i]._w)
+            weightgm *= particleList[i]._w
+    weightgm = weightgm ** (1/numberOfParticles)
+    if(weightgm < 0.1*(1/numberOfParticles)):
+        #resample particles lel
+        sample=rv_discrete(values=(indexlist,weightlist)).rvs(size=numberOfParticles)
+        newplist = []
+        for i in range(numberOfParticles):
+            p = particleList[sample[i]]
+            newplist.append(Particle(p._x, 1/numberOfParticles))
+        particleList = newplist
     client.send(["points", particleList])
     client.send(xt)
     count += 1
+    if(count == 300):
+        xtarg = np.array([random.randint(10,130),random.randint(10,140),0,0,0,0])
+        count = 0
+
+
 
 

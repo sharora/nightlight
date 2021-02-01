@@ -45,7 +45,7 @@ def update_pos(dt):
             if(len(points) == len(msg[1])):
                 points[i].x = pix2inch*temp._x[0]
                 points[i].y = pix2inch*temp._x[1]
-                points[i].radius = pix2inch*temp._w*5
+                points[i].radius = pix2inch*temp._w*10
             else:
                 points.append(shapes.Circle(pix2inch*temp._x[0], pix2inch*temp._x[1], pix2inch*3,color=(255,0,0), batch=batch))
     else:
