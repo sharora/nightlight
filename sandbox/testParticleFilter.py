@@ -5,7 +5,6 @@ from MecanumRobotDynamics import MecanumRobotDynamics
 from obstacle import CircularObstacle
 from particle import Particle
 import math
-import random
 from scipy.stats import rv_discrete
 
 address = ('localhost', 6000)

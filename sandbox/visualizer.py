@@ -16,6 +16,8 @@ batch = graphics.Batch()
 robot = shapes.Rectangle(-100, -100, robotsize*pix2inch, robotsize*pix2inch, (255,255,255), batch=batch)
 obstacles = []
 points = []
+mapsquares = []
+lidarscan = []
 
 #setting center of rotation to be center of the robot
 robot._anchor_x = pix2inch*robotsize/2 
@@ -25,7 +27,6 @@ robot._anchor_y = pix2inch*robotsize/2
 address = ('localhost', 6000)
 listener = Listener(address, authkey=b'Ok Boomer!')
 connection = listener.accept()
-l = False
 
 
 @sim_window.event
@@ -45,9 +46,31 @@ def update_pos(dt):
             if(len(points) == len(msg[1])):
                 points[i].x = pix2inch*temp._x[0]
                 points[i].y = pix2inch*temp._x[1]
-                points[i].radius = pix2inch*temp._w*10
+                points[i].radius = pix2inch*temp._w*20
             else:
-                points.append(shapes.Circle(pix2inch*temp._x[0], pix2inch*temp._x[1], pix2inch*3,color=(255,0,0), batch=batch))
+                points.append(shapes.Circle(pix2inch*temp._x[0], pix2inch*temp._x[1],pix2inch*3,color=(255,0,0), batch=batch))
+    elif(msg[0] == "map"):
+        oc = msg[1]
+        length = oc._length
+        width = oc._width
+        cell2pix = oc._celldim * pix2inch 
+        for i in range(length):
+            for j in range(width):
+                if(oc._oc[length - i - 1][j] == 0):
+                    mapsquares.append(shapes.Rectangle(cell2pix*j, cell2pix*i, cell2pix-1, cell2pix - 1, (115,3,252), batch=batch))
+    elif(msg[0] == "lidar"):
+        ls = msg[1]
+        length = ls.shape[0]
+        width = ls.shape[1]
+        #TODO remove hardcode
+        cell2pix = 12*pix2inch
+        for i in range(length):
+            for j in range(width):
+                if(ls[length - i - 1][j] == 1):
+                    lidarscan.append(shapes.Rectangle(cell2pix*j, cell2pix*i, cell2pix-1, cell2pix - 1, (0,255,0), batch=batch))
+                elif(ls[length - i - 1][j] == 0):
+                    lidarscan.append(shapes.Rectangle(cell2pix*j, cell2pix*i, cell2pix-1, cell2pix - 1, (255,0,0), batch=batch))
+
     else:
         robot.x = msg[0]*pix2inch
         robot.y = msg[1]*pix2inch
