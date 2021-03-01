@@ -14,53 +14,67 @@ class LidarSensor(object):
 
     def getMeasurement(self, oc, x):
         #copy map and fill map with -1s
-        laserscan = np.copy(oc._oc)
-        for i in range(oc._length):
-            for j in range(oc._width):
-                laserscan[i][j] = -1
+        # laserscan = np.copy(oc._oc)
+        # for i in range(oc._length):
+        #     for j in range(oc._width):
+        #         laserscan[i][j] = -1
+        laserscan = []
         #round robot coordinate to map pos
         mapx = int(x[0]/oc._celldim)
         mapy = int(x[1]/oc._celldim)
 
         #setting robot coordinate to empty
-        laserscan[oc._length-mapy-1][mapx] = 1
+        # laserscan[oc._length-mapy-1][mapx] = 1
         increment = 0
 
         #loop through all lines starting at coordinate
         for i in range(len(self._thetalist)):
+            #handle pi/2 and 3pi/2
             m = math.tan(self._thetalist[i])
             currx = mapx + 0.5
             curry = mapy + 0.5
+            laserscan.append([])
             if(m > 1 or m < -1):
                 if(math.sin(self._thetalist[i]) > 0):
                     increment = 1
                 else:
                     increment = -1
                 while(oc._oc[oc._length - int(curry) - 1][int(currx)] != 0 and currx > 0 and curry > 0 and currx < oc._width and curry < oc._length):
-                    laserscan[oc._length - int(curry) - 1][int(currx)] = 1
+                    # laserscan[oc._length - int(curry) - 1][int(currx)] = 1
+                    laserscan[i].append([int(currx) - mapx, int(curry) - mapy])
                     currx += 1/m*increment
                     curry += 1*increment
-                laserscan[oc._length - int(curry) - 1][int(currx)] = 0
+                laserscan[i].append([int(currx) - mapx, int(curry) - mapy])
+                # laserscan[oc._length - int(curry) - 1][int(currx)] = 0
             else:
                 if(math.cos(self._thetalist[i]) > 0):
                     increment = 1
                 else:
                     increment = -1
                 while(oc._oc[oc._length - int(curry) - 1][int(currx)] != 0 and currx > 0 and curry > 0 and currx < oc._width and curry < oc._length):
-                    laserscan[oc._length - int(curry) - 1][int(currx)] = 1
+                    # laserscan[oc._length - int(curry) - 1][int(currx)] = 1
+                    laserscan[i].append([int(currx) - mapx, int(curry) - mapy])
                     currx += 1*increment
                     curry += m*increment
-                laserscan[oc._length - int(curry) - 1][int(currx)] = 0
+                laserscan[i].append([int(currx) - mapx, int(curry) - mapy])
+                # laserscan[oc._length - int(curry) - 1][int(currx)] = 0
+        # laserscan[oc._lengtmapy-1][mapx] = 2
 
         return laserscan
-    def getLaserScanCorrelation(self, l1, l2):
+    def getLaserScanCorrelation(self, ls, oc, xt):
         score = 0
-        for i in range(l1.shape[0]):
-            for j in range(l1.shape[1]):
-                if(l1[i][j] == 1 and l2[i][j] == 1):
-                    score += 1
-                if(l1[i][j] == 0 and l2[i][j] == 0):
-                    score += 1
+        for i in range(len(ls)):
+            for j in range(len(ls[i])):
+                xls = ls[i][j][0] + int(xt[0]/4)
+                yls = ls[i][j][1] + int(xt[1]/4)
+                if(xls < 0 or yls < 0 or yls > oc._length - 1 or xls > oc._width - 1):
+                    continue
+                if(j == len(ls[i]) - 1):
+                    if(oc._oc[oc._length - yls - 1][xls] == 0):
+                        score += 1
+                else:
+                    if(oc._oc[oc._length - yls - 1][xls] == 1):
+                        score += 1
         return score
 
 
