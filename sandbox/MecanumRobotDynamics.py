@@ -32,7 +32,7 @@ class MecanumRobotDynamics(object):
         robotstate = robotstate + delta
         return robotstate
     def stochasticstep(self, robotstate, controls, dt):
-        vsquared = robotstate[3]**2 + robotstate[4] + robotstate[5]**2
+        vsquared = robotstate[3]**2 + robotstate[4]**2 + robotstate[5]**2
         variance = 0
         if(vsquared > 0.5):
             variance = 0.02*math.sqrt(vsquared)

@@ -96,20 +96,21 @@ xt_newmap = np.array([120,180, 0, 0, 0, 0])
 
 def updateNewMap(new_oc, xt, ls):
     newmap = new_oc._oc
+    maplength = new_oc._length
     for i in range(len(ls)):
         for j in range(len(ls[i])):
             xls = ls[i][j][0] + int(xt[0]/4)
             yls = ls[i][j][1] + int(xt[1]/4)
             if(j == len(ls[i]) - 1):
                 # newmap[yls][xls] = min(newmap[yls][xls] + 20, 50)
-                newmap[yls][xls] = 0
+                newmap[maplength - yls - 1][xls] = 0
             else:
                 # newmap[yls][xls] -= max(newmap[yls][xls] - 20, -50)
-                newmap[yls][xls] = 1
+                newmap[maplength - yls - 1][xls] = 1
     new_oc._oc = newmap
 
 oc = OccupancyGrid(priormap, 4)
-ls = LidarSensor(21)
+ls = LidarSensor(81)
 robot = MecanumRobotDynamics(40,100)
 k = 5*np.array([[1, 0, 0, 1, 0, 0],
                 [0, 1, 0, 0, 1, 0],
@@ -125,7 +126,7 @@ dt = 0.02
 # client.send(["lidar",  scan, xt])
 
 numberOfParticles = 200
-measureskip = 5
+measureskip = 10
 particleList = []
 for i in range(numberOfParticles):
     xp = xt_newmap
@@ -156,14 +157,16 @@ while(f):
 
         if(count % measureskip == 0):
             xti = particleList[i]._x
-            corr = math.exp(ls.getLaserScanCorrelation(z, newmap, xti))
+            corr = math.exp(0.5*ls.getLaserScanCorrelation(z, newmap, xti))
             newweight = particleList[i]._w*corr
             particleList[i]._w = newweight
             normalization += newweight
     if(count % measureskip == 0):
         maxweight = 0
         maxindex = 0
-        client.send(["lidar",  z, xt_newmap])
+        client.send(["map", newmap])
+        if(count < 500):
+            client.send(["lidar",  z, xt_newmap])
         #normalizing the weights
         for i in range(numberOfParticles):
             particleList[i]._w = particleList[i]._w / normalization
@@ -173,8 +176,8 @@ while(f):
                 maxweight = particleList[i]._w
                 maxindex = i
                 neff += (particleList[i]._w) ** 2
-                neff = 1.0/neff
-                # print(neff)
+        neff = 1.0/neff
+        # print(neff)
         updateNewMap(newmap,particleList[maxindex]._x, z)
     if(neff < 0.1*(numberOfParticles) and count % measureskip == 0):
         #resample particles lel
@@ -188,9 +191,9 @@ while(f):
     client.send(xt_newmap)
     count += 1
     if(count == 100):
-        xtarg = np.array([120, 60, 0, 0, 0 ,0])
-    if(count == 500):
-        plt.imshow(newmap._oc)
-        plt.show()
-        break
+        xtarg = np.array(([120, 60, 0, 0, 0 ,0]))
+    # if(count == 500):
+        # plt.imshow(newmap._oc)
+        # plt.show()
+        # break
 

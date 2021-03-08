@@ -78,6 +78,8 @@ def update_pos(dt):
             for j in range(width):
                 if(oc._oc[length - i - 1][j] == 0):
                     ocgraphic[i][j].color = (115,3,252)
+                else:
+                    ocgraphic[i][j].color = (0,0,0)
     elif(msg[0] == "lidar"):
         ls = msg[1]
         xt = msg[2]
