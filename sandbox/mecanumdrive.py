@@ -1,11 +1,28 @@
 import numpy as np
 import math
+from dynamics import Dynamics
 
-class MecanumRobotDynamics(object):
-    def __init__(self, mass, moment):
-        super().__init__()
-        self._mass = mass
-        self._moment = moment
+class MecanumDrive(Dynamics):
+    def __init__(self, xdim, udim):
+        Dynamics.__init__(self, xdim, udim)
+
+
+    def getA(self, xt, ut):
+        A = np.array([[0, 0, 0, 1, 0, 0],
+                      [0, 0, 0, 0, 1, 0],
+                      [0, 0, 0, 0, 0, 1],
+                      [0, 0, 0, -0.5, 0, 0],
+                      [0, 0, 0, 0, -0.5, 0],
+                      [0, 0, 0, 0, 0, -0.5]])
+        return A
+    def getB(self, xt, ut):
+        B = np.array([[0,0,0],
+                      [0,0,0],
+                      [0,0,0],
+                      [1,0,0],
+                      [0,1,0],
+                      [0,0,1]])
+        return B
 
     def step(self, robotstate, controls, dt):
         ''' 
@@ -39,26 +56,4 @@ class MecanumRobotDynamics(object):
         x = self.step(robotstate, controls, dt)
         disturbance = np.random.multivariate_normal(np.zeros(6),variance*np.eye(6))
         return x + disturbance
-
-        pass
-    def getA(self):
-        A = np.array([[0, 0, 0, 1, 0, 0],
-                      [0, 0, 0, 0, 1, 0],
-                      [0, 0, 0, 0, 0, 1],
-                      [0, 0, 0, -0.5, 0, 0],
-                      [0, 0, 0, 0, -0.5, 0],
-                      [0, 0, 0, 0, 0, -0.5]])
-        return A
-    def getB(self):
-        B = np.array([[0,0,0],
-                      [0,0,0],
-                      [0,0,0],
-                      [1,0,0],
-                      [0,1,0],
-                      [0,0,1]])
-        return B
-
-
-
-
 

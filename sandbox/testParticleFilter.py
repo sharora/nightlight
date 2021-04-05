@@ -1,7 +1,7 @@
 from multiprocessing.connection import Client
 import random
 import numpy as np
-from MecanumRobotDynamics import MecanumRobotDynamics
+from mecanumdrive import MecanumDrive
 from obstacle import CircularObstacle
 from particle import Particle
 import math
@@ -10,7 +10,7 @@ from scipy.stats import rv_discrete
 address = ('localhost', 6000)
 client = Client(address, authkey=b'Ok Boomer!')
 
-robot = MecanumRobotDynamics(40,100)
+robot = MecanumDrive(6,3)
 
 #initializing start and target states
 x0 = np.array([71, 71, 90, 0, 0, 0])

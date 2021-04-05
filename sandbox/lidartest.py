@@ -1,7 +1,7 @@
 from multiprocessing.connection import Client
 import random
 import numpy as np
-from MecanumRobotDynamics import MecanumRobotDynamics
+from mecanumdrive import MecanumDrive
 from obstacle import CircularObstacle
 from particle import Particle
 from occupancygrid import OccupancyGrid
@@ -9,6 +9,7 @@ from lidarsensor import LidarSensor
 import math
 from scipy.stats import rv_discrete
 import matplotlib.pyplot as plt
+from particlefilter import ParticleFilter
 
 address = ('localhost', 6000)
 client = Client(address, authkey=b'Ok Boomer!')
@@ -111,7 +112,7 @@ def updateNewMap(new_oc, xt, ls):
 
 oc = OccupancyGrid(priormap, 4)
 ls = LidarSensor(81)
-robot = MecanumRobotDynamics(40,100)
+robot = MecanumDrive(6,3)
 k = 5*np.array([[1, 0, 0, 1, 0, 0],
                 [0, 1, 0, 0, 1, 0],
                 [0, 0, 1, 0, 0, 1]])
@@ -121,79 +122,52 @@ xt = np.array([20,108, 0, 0, 0, 0])
 xtarg = np.array([20, 70, 0, 0, 0 ,0])
 dt = 0.02
 
-
-# scan = ls.getMeasurement(oc,xt)
-# client.send(["lidar",  scan, xt])
-
 numberOfParticles = 200
-measureskip = 10
 particleList = []
 for i in range(numberOfParticles):
     xp = xt_newmap
-    # xp = np.zeros(6)
-    # xp[0] = random.random()*144
-    # xp[1] = random.random()*144
     p = Particle(xp, 1/numberOfParticles)
     particleList.append(p)
-client.send(xt_newmap)
 
+client.send(xt_newmap)
 client.send(["points", particleList])
 
+pf = ParticleFilter(particleList, robot, ls, 0.1)
+
+z = 0
 count = 1
-f= True
+measureskip = 10
+f = True
+
 while(f):
-    normalization = 0
-    neff = 0
-    gini = 0
-    weightlist = []
-    indexlist = []
     u = -k @ (xt - xtarg)
     xt = robot.step(xt, u, dt)
     xt_newmap = robot.step(xt_newmap,u,dt)
-    z = ls.getMeasurement(oc, xt)
-    for i in range(numberOfParticles):
-        particleList[i]._x = robot.stochasticstep(particleList[i]._x, u, dt)
-        #calculating new weight: p(zt | x_t_i)
 
-        if(count % measureskip == 0):
-            xti = particleList[i]._x
-            corr = math.exp(0.5*ls.getLaserScanCorrelation(z, newmap, xti))
-            newweight = particleList[i]._w*corr
-            particleList[i]._w = newweight
-            normalization += newweight
+    #limiting rate of measurement
     if(count % measureskip == 0):
-        maxweight = 0
-        maxindex = 0
+        z = ls.getMeasurement(xt, oc)
+
+    #prediction step
+    pf.step(u, dt)
+
+    #operations that only need to be performed when a new measurement arrives
+    if(count % measureskip == 0):
+        #update step
+        pf.updateweights(z, newmap)
+
+        #finding the max particle
+        maxparticle = pf.getMaxParticle()
+
+        #visualiztion stuff
+        updateNewMap(newmap, maxparticle._x, z)
         client.send(["map", newmap])
         if(count < 500):
             client.send(["lidar",  z, xt_newmap])
-        #normalizing the weights
-        for i in range(numberOfParticles):
-            particleList[i]._w = particleList[i]._w / normalization
-            indexlist.append(i)
-            weightlist.append(particleList[i]._w)
-            if(particleList[i]._w > maxweight):
-                maxweight = particleList[i]._w
-                maxindex = i
-                neff += (particleList[i]._w) ** 2
-        neff = 1.0/neff
-        # print(neff)
-        updateNewMap(newmap,particleList[maxindex]._x, z)
-    if(neff < 0.1*(numberOfParticles) and count % measureskip == 0):
-        #resample particles lel
-        sample=rv_discrete(values=(indexlist,weightlist)).rvs(size=numberOfParticles)
-        newplist = []
-        for i in range(numberOfParticles):
-            p = particleList[sample[i]]
-            newplist.append(Particle(p._x, 1/numberOfParticles))
-        particleList = newplist
-    client.send(["points", particleList])
+
+    client.send(["points", pf._particleList])
     client.send(xt_newmap)
     count += 1
     if(count == 100):
         xtarg = np.array(([120, 60, 0, 0, 0 ,0]))
-    # if(count == 500):
-        # plt.imshow(newmap._oc)
-        # plt.show()
-        # break
 

@@ -1,9 +1,10 @@
 import numpy as np
 import math
+from sensor import Sensor
 
-class LidarSensor(object):
+class LidarSensor(Sensor):
     def __init__(self, numofLasers):
-        super().__init__()
+        Sensor.__init__(self)
         self._numofLasers = numofLasers
 
         #assuming lasers are equally spaced
@@ -12,12 +13,9 @@ class LidarSensor(object):
         for i in range(numofLasers):
             self._thetalist.append(i*laserspacing)
 
-    def getMeasurement(self, oc, x):
-        #copy map and fill map with -1s
-        # laserscan = np.copy(oc._oc)
-        # for i in range(oc._length):
-        #     for j in range(oc._width):
-        #         laserscan[i][j] = -1
+    def getMeasurement(self, x, oc):
+        #oc is the occupancy grid
+        #x is the current robot state
         laserscan = []
         #round robot coordinate to map pos
         mapx = int(x[0]/oc._celldim)
@@ -61,7 +59,7 @@ class LidarSensor(object):
         # laserscan[oc._lengtmapy-1][mapx] = 2
 
         return laserscan
-    def getLaserScanCorrelation(self, ls, oc, xt):
+    def getMeasurementProbability(self, xt, ls, oc):
         score = 0
         for i in range(len(ls)):
             for j in range(len(ls[i])):
@@ -75,6 +73,7 @@ class LidarSensor(object):
                 else:
                     if(oc._oc[oc._length - yls - 1][xls] == 1):
                         score += 1
+        score = math.exp(0.5*score)
         return score
 
 
