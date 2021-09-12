@@ -16,7 +16,6 @@ robotsize = 18
 sim_window = pyglet.window.Window(pix2inch*fieldwidth, pix2inch*fieldwidth)
 batch = graphics.Batch()
 
-
 #creating occupancy grid
 ocgraphic = []
 oclen = int(fieldwidth/oc2inch)

@@ -1,7 +1,6 @@
 import jax.numpy as np
 from jax import grad
 from jax import jit
-from obstacle import CircularObstacle
 import math
 import matplotlib.pyplot as plt 
 

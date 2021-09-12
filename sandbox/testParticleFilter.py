@@ -1,9 +1,8 @@
 from multiprocessing.connection import Client
 import random
 import numpy as np
-from mecanumdrive import MecanumDrive
-from obstacle import CircularObstacle
-from particle import Particle
+from dynamics.mecanumdrive import MecanumDrive
+from particlefilter.particle import Particle
 import math
 from scipy.stats import rv_discrete
 
