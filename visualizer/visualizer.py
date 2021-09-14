@@ -1,6 +1,7 @@
 import pygame
 import cv2
 import numpy as np
+import math
 
 class Visualizer(object):
     """
@@ -46,7 +47,27 @@ class Visualizer(object):
            theta : robot angle in radians
            l : sidelength in inches
         """
-        pass
+        #calculating square coordinates
+        dx0 = l/2
+        dy0 = l/2
+
+        dx = dx0*math.cos(theta) - dy0*math.sin(theta)
+        dy = dx0*math.sin(theta) + dy0*math.cos(theta)
+
+        p1 = self.imageCoordinates(x + dx, y + dy)
+        p2 = self.imageCoordinates(x - dy, y + dx)
+        p3 = self.imageCoordinates(x - dx, y - dy)
+        p4 = self.imageCoordinates(x + dy, y - dx)
+
+        #drawing polygon as white
+        pygame.draw.polygon(self._display, (255,255,255), [p1, p2, p3, p4])
+
+        #drawing heading line to show orientation
+        orx = x + dx0*math.cos(theta)
+        ory = y + dx0*math.sin(theta)
+        pygame.draw.line(self._display, (255, 0, 0), self.imageCoordinates(x,y),
+                         self.imageCoordinates(orx,ory),
+                         self._pixperinch)
 
     def graphCircularObstacle(self, x, y, radius):
         """
@@ -58,23 +79,32 @@ class Visualizer(object):
         pygame.draw.circle(self._display, (255, 0, 0),
                            self.imageCoordinates(x,y), radius*self._pixperinch)
 
-    def graphLidarScan(self, x, y, scan):
+    def graphLidarScan(self, x, y, scan, maxrange):
         """Graphs a lidar scan originating at (x,y)
 
         Args:
            self arg1
            x : x coordinate of scan in inches
            y : y coordinate of scan in inches
-           scan : list of distances in each direction
+           scan : measured occupancy grid centered around x,y
+           maxrange : max range of lidar
         """
-        im = np.zeros((self._width, self._height, 3))
+        im = np.zeros((self._width, self._height))
 
-        #loop over all lasers
-        for laser in scan:
-            for cell in laser:
-                cellx = int(cell[0] + x)
-                celly = int(cell[1] + y)
-                im[cellx, celly] = (0, 255, 0)
+        #bounds for image
+        lb = max(int(x) - maxrange, 0)
+        rb = min(int(x) + maxrange + 1, self._width)
+        db = max(int(y) - maxrange, 0)
+        ub = min(int(y) + maxrange + 1, self._height)
+
+        #bounds for scan
+        lpad = max(0, maxrange-int(x))
+        rpad = 2*maxrange + 1 - max(0, int(x) + maxrange + 1 - self._width)
+        dpad = max(0, maxrange-int(y))
+        upad = 2*maxrange + 1 - max(0, int(y) + maxrange + 1 - self._height)
+
+        #adding scan to image
+        im[lb:rb, db:ub] += scan[lpad:rpad, dpad:upad]
 
         #scaling up the scan
         im = cv2.resize(im, (0,0), fx=self._pixperinch, fy=self._pixperinch,
@@ -113,6 +143,12 @@ class Visualizer(object):
         '''
         pygame.event.pump()
         return pygame.key.get_pressed()
+
+    def clearScreen(self, color):
+        '''
+        Clears the screen and sets it to the given color
+        '''
+        self._display.fill(color)
 
 if __name__ == '__main__':
     from PIL import Image

@@ -18,7 +18,8 @@ class ParticleFilter(object):
         #n is some normalization to make everything sum to one
         n = 0
 
-        #for each particle, update its weight using bayes rule: p(x|z) = p(z|x)p(x)*n
+        #for each particle, update its weight using bayes rule: p(x|z) =
+        #p(z|x)p(x)*n
         for particle in self._particleList:
             if(oc == None):
                 particle._w *= self._sensor.getMeasurementProbability(particle._x, z)

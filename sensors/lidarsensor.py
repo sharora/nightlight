@@ -1,42 +1,51 @@
 import numpy as np
-import math
 from . sensor import Sensor
 
 class LidarSensor(Sensor):
-    def __init__(self, numofLasers):
+    def __init__(self, numofLasers, maxrange):
         Sensor.__init__(self)
         assert numofLasers % 2 == 1, "odd number of lasers needed"
         self._numofLasers = numofLasers
+        self._range = maxrange
 
         #assuming lasers are equally spaced
-        self._thetalist = []
-        laserspacing = 2*math.pi/numofLasers
-        for i in range(numofLasers):
-            self._thetalist.append(i*laserspacing)
+        self._thetalist = np.linspace(0, 2*np.pi, num=numofLasers, endpoint=False)
 
     def getMeasurement(self, x, oc):
-        laserscan = []
+        laserscan = np.zeros((2*self._range + 1, 2*self._range + 1))
 
+        xround = int(x[0])
+        yround = int(x[1])
         #loop through all lines starting at coordinate
         for theta in self._thetalist:
-            currx = x[0]
-            curry = x[1]
-            laserscan.append([])
+            currx = int(x[0])
+            curry = int(x[1])
 
             #finding each increment
-            xinc = math.cos(theta)
-            yinc = math.sin(theta)
+            xinc = np.cos(theta)
+            yinc = np.sin(theta)
 
             #normalizing increment so one of them is 1
             larger = max(abs(xinc), abs(yinc))
             xinc /= larger
             yinc /= larger
 
-            while oc.inBounds(currx, curry) and oc.isFree(currx, curry):
-                laserscan[-1].append(np.array([currx - x[0], curry - x[1]]))
+            #tracking distance of beam
+            distinc = np.sqrt(xinc**2 + yinc**2)
+            currdist = 0
+
+            #main section of lidar scan
+            while oc.inBounds(currx, curry) and oc.isFree(currx, curry) and currdist < self._range:
+                laserscan[int(currx - xround + self._range), int(curry - yround + self._range)] = 1
                 currx += xinc
                 curry += yinc
-            laserscan[-1].append(np.array([currx - x[0], curry - x[1]]))
+                currdist += distinc
+
+            #writing the final value of the scan
+            final = -1
+            if oc.inBounds(currx, curry) and oc.isFree(currx, curry):
+                final = 1
+            laserscan[int(currx - xround + self._range), int(curry - yround + self._range)] = final
 
         return laserscan
 
@@ -52,10 +61,10 @@ class LidarSensor(Sensor):
                 yls = cell[1] + xt[0]
                 if not oc.inBounds(xls, yls):
                     continue
-                if laser[-1] == cell and not oc.isFree(xls, yls):
+                if np.all(laser[-1] == cell) and not oc.isFree(xls, yls):
                     score += 1
                 elif oc.isFree(xls, yls):
                     score += 1
-        return math.exp(score)
+        return score
 
 

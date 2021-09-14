@@ -8,9 +8,9 @@ class MecanumDrive(Dynamics):
         self._A = np.array([[0, 0, 0, 1, 0, 0],
                             [0, 0, 0, 0, 1, 0],
                             [0, 0, 0, 0, 0, 1],
-                            [0, 0, 0, -0.5, 0, 0],
-                            [0, 0, 0, 0, -0.5, 0],
-                            [0, 0, 0, 0, 0, -0.5]])
+                            [0, 0, 0, -1, 0, 0],
+                            [0, 0, 0, 0, -1, 0],
+                            [0, 0, 0, 0, 0, -1]])
         self._B = np.array([[0,0,0],
                             [0,0,0],
                             [0,0,0],
@@ -36,11 +36,12 @@ class MecanumDrive(Dynamics):
         robotstate = robotstate + delta
         return robotstate
     def stochasticstep(self, robotstate, controls, dt):
-        vsquared = robotstate[3]**2 + robotstate[4]**2 + robotstate[5]**2
-        variance = 0
-        if(vsquared > 0.5):
-            variance = 0.02*math.sqrt(vsquared)
-            x = self.step(robotstate, controls, dt)
-            disturbance = np.random.multivariate_normal(np.zeros(6),variance*np.eye(6))
+        # vsquared = robotstate[3]**2 + robotstate[4]**2 + robotstate[5]**2
+        # variance = 0
+        x = self.step(robotstate, controls, dt)
+        disturbance = 0
+        # if(vsquared > 0.5):
+        #     variance = 0.02*math.sqrt(vsquared)
+        #     disturbance = np.random.multivariate_normal(np.zeros(6),variance*np.eye(6))
         return x + disturbance
 
