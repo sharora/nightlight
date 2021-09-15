@@ -53,6 +53,7 @@ class ParticleFilter(object):
             p = self._particleList[sample[i]]
             newplist.append(Particle(p._x, 1/self._numberOfParticles))
         self._particleList = newplist
+
     def getMaxParticle(self):
         maxweight = 0
         maxparticle = None

@@ -1,5 +1,6 @@
 import numpy as np
 from . sensor import Sensor
+import cv2
 
 class LidarSensor(Sensor):
     def __init__(self, numofLasers, maxrange):
@@ -12,14 +13,25 @@ class LidarSensor(Sensor):
         self._thetalist = np.linspace(0, 2*np.pi, num=numofLasers, endpoint=False)
 
     def getMeasurement(self, x, oc):
+        """Returns a lidar scan from position x w.r.t to occupancy grid oc
+
+        Args:
+           self arg1
+           x : state where x[0:3] = (x,y,theta) of robot
+           oc : occupancy grid to perform sense operation on
+
+        Returns:
+            2d numpy array representing scan, with size 2*range + 1 in each axis,
+        egocentric observation from state
+        """
         laserscan = np.zeros((2*self._range + 1, 2*self._range + 1))
 
         xround = int(x[0])
         yround = int(x[1])
         #loop through all lines starting at coordinate
         for theta in self._thetalist:
-            currx = int(x[0])
-            curry = int(x[1])
+            currx = xround
+            curry = yround
 
             #finding each increment
             xinc = np.cos(theta)
@@ -53,18 +65,40 @@ class LidarSensor(Sensor):
         '''
         In this case we return a similarity score instead of a probability.
         '''
+
+        #resizing occupancy grid so it can be directly scored against scan
+        ocmap = cv2.resize(oc._oc, (0,0), fx=oc._celldim, fy=oc._celldim,
+                        interpolation=cv2.INTER_NEAREST)
+        width = ocmap.shape[0]
+        length = ocmap.shape[0]
         score = 0
-        #loop over all lasers
-        for laser in ls:
-            for cell in laser:
-                xls = cell[0] + xt[0]
-                yls = cell[1] + xt[0]
-                if not oc.inBounds(xls, yls):
-                    continue
-                if np.all(laser[-1] == cell) and not oc.isFree(xls, yls):
-                    score += 1
-                elif oc.isFree(xls, yls):
-                    score += 1
-        return score
+
+        #rounding coordinates
+        x = int(xt[0])
+        y = int(xt[1])
+        maxrange = self._range
+
+        #bounds for image
+        lb = max(x - maxrange, 0)
+        rb = min(x + maxrange + 1, width)
+        db = max(y - maxrange, 0)
+        ub = min(y + maxrange + 1, length)
+
+        #bounds for scan
+        lpad = max(0, maxrange-x)
+        rpad = 2*maxrange + 1 - max(0, x + maxrange + 1 - width)
+        dpad = max(0, maxrange-y)
+        upad = 2*maxrange + 1 - max(0, y + maxrange + 1 - length)
+
+        #finding difference between scan and map, so we can create a score
+        diff = ocmap[lb:rb, db:ub] - ls[lpad:rpad, dpad:upad]
+
+        #number of cells where both claim empty
+        score += np.count_nonzero(diff<0)
+
+        #number of cells where both claim occupied
+        score += np.count_nonzero(diff == 2)
+
+        return np.exp(0.2*score)
 
 
