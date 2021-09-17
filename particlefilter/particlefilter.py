@@ -25,17 +25,21 @@ class ParticleFilter(object):
 
         #for each particle, update its weight using bayes rule: p(x|z) =
         #p(z|x)p(x)*n
+        measureprobs = np.zeros(self._weights.shape)
         for i in range(self._numberOfParticles):
             if(oc == None):
-                self._weights[i] *= self._sensor.getMeasurementProbability(self._states[i], z)
+                measureprobs[i] = self._sensor.getMeasurementProbability(self._states[i], z)
             else:
-                self._weights[i] *= self._sensor.getMeasurementProbability(self._states[i], z, oc)
+                measureprobs[i] = self._sensor.getMeasurementProbability(self._states[i], z, oc)
 
-        #calculating the number of effective particles in the same loop to determine
+        #exponentiation of probs (scores) to increase inequality
+        measureprobs = np.exp(measureprobs - np.max(measureprobs))
 
-        #normalization of all weights using softmax
-        exp = np.exp(self._weights - np.max(self._weights))
-        self._weights = exp/exp.sum()
+        #multiplying old probabilities by measurement probabilities
+        self._weights = np.multiply(self._weights, measureprobs)
+
+        #normalization
+        self._weights = self._weights/self._weights.sum()
 
         #calculating neff
         neff = np.sum(self._weights**2)
