@@ -65,12 +65,6 @@ class LidarSensor(Sensor):
         '''
         In this case we return a similarity score instead of a probability.
         '''
-
-        #resizing occupancy grid so it can be directly scored against scan
-        ocmap = cv2.resize(oc._oc, (0,0), fx=oc._celldim, fy=oc._celldim,
-                        interpolation=cv2.INTER_NEAREST)
-        width = ocmap.shape[0]
-        length = ocmap.shape[0]
         score = 0
 
         #rounding coordinates
@@ -78,27 +72,36 @@ class LidarSensor(Sensor):
         y = int(xt[1])
         maxrange = self._range
 
-        #bounds for image
-        lb = max(x - maxrange, 0)
-        rb = min(x + maxrange + 1, width)
-        db = max(y - maxrange, 0)
-        ub = min(y + maxrange + 1, length)
+        #checking if position is within bounds and not occupied
+        if oc.inBounds(x, y) and oc.isFree(x, y):
+            #resizing occupancy grid so it can be directly scored against scan
+            ocmap = cv2.resize(oc._oc, (0,0), fx=oc._celldim, fy=oc._celldim,
+                            interpolation=cv2.INTER_NEAREST)
+            width = ocmap.shape[0]
+            length = ocmap.shape[0]
 
-        #bounds for scan
-        lpad = max(0, maxrange-x)
-        rpad = 2*maxrange + 1 - max(0, x + maxrange + 1 - width)
-        dpad = max(0, maxrange-y)
-        upad = 2*maxrange + 1 - max(0, y + maxrange + 1 - length)
 
-        #finding difference between scan and map, so we can create a score
-        diff = ocmap[lb:rb, db:ub] - ls[lpad:rpad, dpad:upad]
+            #bounds for image
+            lb = max(x - maxrange, 0)
+            rb = min(x + maxrange + 1, width)
+            db = max(y - maxrange, 0)
+            ub = min(y + maxrange + 1, length)
 
-        #number of cells where both claim empty
-        score += np.count_nonzero(diff<0)
+            #bounds for scan
+            lpad = max(0, maxrange-x)
+            rpad = 2*maxrange + 1 - max(0, x + maxrange + 1 - width)
+            dpad = max(0, maxrange-y)
+            upad = 2*maxrange + 1 - max(0, y + maxrange + 1 - length)
 
-        #number of cells where both claim occupied
-        score += np.count_nonzero(diff == 2)
+            #finding difference between scan and map, so we can create a score
+            diff = ocmap[lb:rb, db:ub] - ls[lpad:rpad, dpad:upad]
 
-        return np.exp(0.2*score)
+            #number of cells where both claim empty
+            score += np.count_nonzero(diff<0)
+
+            #number of cells where both claim occupied
+            score += np.count_nonzero(diff == 2)
+
+        return 0.2*score
 
 

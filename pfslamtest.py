@@ -3,7 +3,7 @@ import numpy as np
 import pygame
 
 from particlefilter.particlefilter import ParticleFilter
-from particlefilter.particlegenerator import randomParticlesBox
+from particlefilter.particlegenerator import uniformParticles
 from particlefilter.particle import Particle
 from dynamics.mecanumdrive import MecanumDrive
 from sensors.lidarsensor import LidarSensor
@@ -19,18 +19,23 @@ unless otherwise specified. '''
 
 '''-----CONFIGURATION STARTS-----'''
 
-#map config
+#ground truth map config
 map_path = './maps/simple_grid.png'
 map_cell_dim = 4
+
+#generated map config
+new_map_dim = (200, 200)
+new_map_cell_dim = 1
 
 #lidar config
 lidar_num_lasers = 81
 lidar_range = 40
-lidar_sample_frequency = 10 #in hertz
+lidar_sample_frequency = 50 #in hertz
 lidar_period = 1.0/lidar_sample_frequency
 
 #robot config
-x0 = np.array([72, 36, 0, 0, 0, 0])
+x0 = np.array([72, 36, 0, 0, 0, 0]) #ground truth position
+x0_newmap = np.array([100, 100, 0, 0, 0, 0])
 robotwidth = 18
 
 #particle filter config
@@ -39,7 +44,7 @@ particleGenMethod = ''
 k_neff = 0.1
 
 #visualizer settings
-maxparticlesize = 15
+maxparticlesize = 50
 minparticlesize = 1
 viz_pixperinch = 6
 
@@ -48,20 +53,22 @@ dt = 0.02
 
 '''-----CONFIGURATION ENDS -----'''
 
-#creating map
+#creating ground truth map
 base_map = loadOCfromPath(map_path)
 oc = OccupancyGrid(base_map, map_cell_dim)
+
+#creating the generated map
+new_map = np.zeros(new_map_dim)
+new_oc = OccupancyGrid(new_map, new_map_cell_dim)
 
 #creating objects for simulation
 dynamics = MecanumDrive()
 lidar = LidarSensor(lidar_num_lasers, lidar_range)
 
 #creating particles and particle filter
-states, weights = randomParticlesBox(numparticles, np.zeros(dynamics.xdim,),
-                                  np.array([oc._width*oc._celldim,
-                                            oc._width*oc._celldim, 0, 0, 0, 0]))
+states, weights = uniformParticles(numparticles, x0_newmap)
 pf = ParticleFilter(states, weights, dynamics, lidar, k_neff)
-viz = Visualizer(oc._width*map_cell_dim, oc._length*map_cell_dim, viz_pixperinch)
+viz = Visualizer(new_oc._width*new_map_cell_dim, new_oc._length*new_map_cell_dim, viz_pixperinch)
 
 
 #lidar frequency tracking variables
@@ -77,22 +84,28 @@ while True:
 
     #robot update step
     x0 = dynamics.step(x0, u, dt)
+    x0_newmap = dynamics.step(x0_newmap, u, dt)
     pf.step(u, dt)
 
     #getting lidar measurement and updating particle filter
     if lidar_wait >= lidar_period:
         ls = lidar.getMeasurement(x0, oc)
-        pf.updateweights(ls, oc)
-        lidar_wait -= lidar_period 
+        pf.updateweights(ls, new_oc)
+        lidar_wait -= lidar_period
         graph_ls = True
     lidar_wait += dt
 
+    maxParticleState = pf.getMaxParticle()[0]
+    if graph_ls:
+        #updating map using the particle with the highest weight
+        new_oc.updateWithLidar(maxParticleState[0], maxParticleState[1], ls, lidar_range)
+
     #displaying current state in visualizer
-    viz.graphOC(oc)
+    viz.graphOC(new_oc)
 
     #only graphing lidar when it is updated
     if graph_ls:
-        viz.graphLidarScan(x0[0], x0[1], ls, lidar_range)
+        viz.graphLidarScan(maxParticleState[0], maxParticleState[1], ls, lidar_range)
         graph_ls = False
 
     #getting states and weights
@@ -100,7 +113,6 @@ while True:
     weights = pf._weights
 
     #graphing the remaining items
-    viz.graphSquareRobot(x0[0], x0[1], x0[2], robotwidth)
+    viz.graphSquareRobot(x0_newmap[0], x0_newmap[1], x0_newmap[2], robotwidth)
     viz.graphParticles(states, weights, maxparticlesize, minparticlesize)
     viz.updateFrame()
-

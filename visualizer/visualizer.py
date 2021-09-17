@@ -116,18 +116,19 @@ class Visualizer(object):
         surf.set_colorkey((0,0,0))
         self._display.blit(surf, (0,0))
 
-    def graphParticles(self, particleList, maxparticlesize, minparticlesize):
+    def graphParticles(self, states, weights, maxparticlesize, minparticlesize):
         """Graphs a set of particles on the visualizer
 
         Args:
-           particleList : list of particles containing their weight and state
+           states : array of particle states
+           weights : array of particle weights
            maxparticlesize : max particle radius in pixels
            minparticlesize : min particle radius in pixels
         """
-        for p in particleList:
+        for i in range(states.shape[0]):
             #getting particle coordinates
-            coor = self.imageCoordinates(p._x[0], p._x[1])
-            radius = max(minparticlesize, int(p._w*maxparticlesize))
+            coor = self.imageCoordinates(states[i][0], states[i][1])
+            radius = max(minparticlesize, int(weights[i]*maxparticlesize))
             pygame.draw.circle(self._display, (0, 255, 0), coor,
                                radius)
 

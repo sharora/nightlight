@@ -1,18 +1,23 @@
 import numpy as np
 from scipy.stats import rv_discrete
 from . particle import Particle
+import time
 
 class ParticleFilter(object):
-    def __init__(self, particleList, dynamics, sensor, k_neff):
-        self._numberOfParticles = len(particleList)
-        self._particleList = particleList
+    def __init__(self, states, weights, dynamics, sensor, k_neff):
+        self._states = states
+        self._weights = weights
+        self._numberOfParticles = states.shape[0]
         self._dynamics = dynamics
         self._sensor = sensor
         self._k_neff = k_neff
+
     def step(self, u, dt):
         #for each particle, use the given dynamics function to update its state
-        for particle in self._particleList:
-            particle._x = self._dynamics.stochasticstep(particle._x, u, dt)
+        for i in range(self._numberOfParticles):
+            self._states[i]= self._dynamics.stochasticstep(
+                self._states[i], u, dt)
+
     def updateweights(self, z, oc = None):
         #oc is optional parameter: occupancy grid
         #n is some normalization to make everything sum to one
@@ -20,19 +25,20 @@ class ParticleFilter(object):
 
         #for each particle, update its weight using bayes rule: p(x|z) =
         #p(z|x)p(x)*n
-        for particle in self._particleList:
+        for i in range(self._numberOfParticles):
             if(oc == None):
-                particle._w *= self._sensor.getMeasurementProbability(particle._x, z)
+                self._weights[i] *= self._sensor.getMeasurementProbability(self._states[i], z)
             else:
-                particle._w *= self._sensor.getMeasurementProbability(particle._x, z, oc)
-            n += particle._w
+                self._weights[i] *= self._sensor.getMeasurementProbability(self._states[i], z, oc)
+
         #calculating the number of effective particles in the same loop to determine
-        #if resampling is needed
-        neff = 0
-        #normalization of all weights
-        for particle in self._particleList:
-            particle._w = particle._w / n
-            neff += (particle._w)**2
+
+        #normalization of all weights using softmax
+        exp = np.exp(self._weights - np.max(self._weights))
+        self._weights = exp/exp.sum()
+
+        #calculating neff
+        neff = np.sum(self._weights**2)
         neff = 1.0/neff
 
         #resampling if needed
@@ -40,27 +46,22 @@ class ParticleFilter(object):
             self.resampleParticles()
 
     def resampleParticles(self):
-        indexlist = []
-        weightlist = []
-        for i in range(self._numberOfParticles):
-            indexlist.append(i)
-            weightlist.append(self._particleList[i]._w)
+        indexarr = np.arange(0, self._numberOfParticles)
 
         #resampling
-        sample=rv_discrete(values=(indexlist,weightlist)).rvs(size=self._numberOfParticles)
-        newplist = []
-        for i in range(self._numberOfParticles):
-            p = self._particleList[sample[i]]
-            newplist.append(Particle(p._x, 1/self._numberOfParticles))
-        self._particleList = newplist
+        sample=rv_discrete(values=(indexarr,
+                                   self._weights)).rvs(size=self._numberOfParticles)
+
+        self._states = self._states[sample]
+        self._weights = 1.0/self._numberOfParticles * np.ones((self._numberOfParticles,))
 
     def getMaxParticle(self):
-        maxweight = 0
-        maxparticle = None
-        for particle in self._particleList:
-            if(particle._w > maxweight):
-                maxweight = particle._w
-                maxparticle = particle
-        return maxparticle
+        p = np.argmax(self._weights)
+        return self._states[p], self._weights[p]
+
+def combined_shape(length, shape=None):
+    if shape is None:
+        return (length,)
+    return (length, shape) if np.isscalar(shape) else (length, *shape)
 
 

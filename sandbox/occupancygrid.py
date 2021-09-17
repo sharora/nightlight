@@ -34,4 +34,37 @@ class OccupancyGrid(object):
         y = int(y / self._celldim)
         return not self._oc[x][y]
 
+    def updateWithLidar(self, x, y, scan, maxrange):
+        """Updates the map according to the given lidar scan.
+
+        Args:
+           x : the x coordinate in inches to update from
+           y : the y coordinate in inches to update from
+           scan : a lidar scan array
+           maxrange : max range of lidar
+        """
+        #TODO handle different lidar and map cell sizes
+
+        #preprocessing scan so that 1 represents occupied, 0 represents unoccupied
+        scan = scan<0
+
+        #bounds for occupancy grid
+        lb = max(int(x) - maxrange, 0)
+        rb = min(int(x) + maxrange + 1, self._width)
+        db = max(int(y) - maxrange, 0)
+        ub = min(int(y) + maxrange + 1, self._length)
+
+        #bounds for scan
+        lpad = max(0, maxrange-int(x))
+        rpad = 2*maxrange + 1 - max(0, int(x) + maxrange + 1 - self._width)
+        dpad = max(0, maxrange-int(y))
+        upad = 2*maxrange + 1 - max(0, int(y) + maxrange + 1 - self._length)
+
+        #adding scan to image
+        self._oc[lb:rb, db:ub] += scan[lpad:rpad, dpad:upad]
+
+        #clipping TODO remove this
+        self._oc = np.clip(self._oc, 0, 1)
+
+
 
