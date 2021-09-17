@@ -46,7 +46,7 @@ class OccupancyGrid(object):
         #TODO handle different lidar and map cell sizes
 
         #preprocessing scan so that 1 represents occupied, 0 represents unoccupied
-        scan = scan<0
+        scan = -scan
 
         #bounds for occupancy grid
         lb = max(int(x) - maxrange, 0)

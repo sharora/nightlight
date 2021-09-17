@@ -28,8 +28,8 @@ new_map_dim = (200, 200)
 new_map_cell_dim = 1
 
 #lidar config
-lidar_num_lasers = 81
-lidar_range = 40
+lidar_num_lasers = 201
+lidar_range = 100
 lidar_sample_frequency = 50 #in hertz
 lidar_period = 1.0/lidar_sample_frequency
 
