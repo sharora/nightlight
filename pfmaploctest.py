@@ -83,7 +83,7 @@ while True:
     if lidar_wait >= lidar_period:
         ls = lidar.getMeasurement(x0, oc)
         pf.updateweights(ls, oc)
-        lidar_wait -= lidar_period 
+        lidar_wait -= lidar_period
         graph_ls = True
     lidar_wait += dt
 
@@ -96,11 +96,14 @@ while True:
         graph_ls = False
 
     #getting states and weights
+    # states = np.array(pf._states)
     states = pf._states
     weights = pf._weights
 
+    xg = np.array(x0)
+
     #graphing the remaining items
-    viz.graphSquareRobot(x0[0], x0[1], x0[2], robotwidth)
+    viz.graphSquareRobot(xg[0], xg[1], xg[2], robotwidth)
     viz.graphParticles(states, weights, maxparticlesize, minparticlesize)
     viz.updateFrame()
 

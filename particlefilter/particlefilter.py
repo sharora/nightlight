@@ -14,23 +14,21 @@ class ParticleFilter(object):
 
     def step(self, u, dt):
         #for each particle, use the given dynamics function to update its state
+        start = time.time()
         for i in range(self._numberOfParticles):
             self._states[i]= self._dynamics.stochasticstep(
                 self._states[i], u, dt)
+        # self._states = self._dynamics.batchstochasticstep(self._states,
+        #                                 np.vstack([u]*self._numberOfParticles),
+        #                                                   dt)
+        print(time.time() - start)
 
     def updateweights(self, z, oc = None):
-        #oc is optional parameter: occupancy grid
-        #n is some normalization to make everything sum to one
-        n = 0
-
         #for each particle, update its weight using bayes rule: p(x|z) =
         #p(z|x)p(x)*n
         measureprobs = np.zeros(self._weights.shape)
         for i in range(self._numberOfParticles):
-            if(oc == None):
-                measureprobs[i] = self._sensor.getMeasurementProbability(self._states[i], z)
-            else:
-                measureprobs[i] = self._sensor.getMeasurementProbability(self._states[i], z, oc)
+            measureprobs[i] = self._sensor.getMeasurementProbability(self._states[i], z, oc)
 
         #exponentiation of probs (scores) to increase inequality
         measureprobs = np.exp(measureprobs - np.max(measureprobs))
