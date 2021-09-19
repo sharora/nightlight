@@ -44,22 +44,19 @@ class MecanumDrive(Dynamics):
         return robotstate
 
     @partial(jit, static_argnums=(0,))
-    #TODO fix this shite, function is fucked
-    def stochasticstep(self, robotstate, controls, dt):
+    def stochasticstep(self, key, robotstate, controls, dt):
         #original step
         x = self.step(robotstate, controls, dt)
 
         #adding noise
         vsquared = robotstate[3]**2 + robotstate[4]**2 + robotstate[5]**2
-        variance = 0.02*np.clip(np.sqrt(vsquared), 0.000001) #clipping to prevent nan
+        variance = 0.02*np.clip(np.sqrt(vsquared), 0.01) #clipping to prevent nan
 
-        #new key for random number generation
-        key = random.PRNGKey(0)
-        key, subkey = random.split(key)
+        #indicator
+        indicator = np.heaviside(vsquared - 0.5, 0.5)
 
-        disturbance = random.multivariate_normal(subkey, np.zeros(6), variance*np.eye(6))
-        return x + disturbance
-        # return x
+        disturbance = random.multivariate_normal(key, np.zeros(6), variance*np.eye(6))
+        return x + disturbance*indicator
 
 if __name__ == '__main__':
     #testing to see if the jit compiled methods work

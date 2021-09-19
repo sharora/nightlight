@@ -7,7 +7,7 @@ class Dynamics(object):
         self.udim = udim
 
         self.batchstep = vmap(self.step, in_axes=[0,0,None])
-        self.batchstochasticstep = vmap(self.stochasticstep, in_axes=[0,0,None])
+        self.batchstochasticstep = vmap(self.stochasticstep, in_axes=[0,0,0,None])
 
     def getA(self, xt, ut):
         raise NotImplementedError()

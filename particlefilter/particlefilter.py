@@ -2,6 +2,8 @@ import numpy as np
 from scipy.stats import rv_discrete
 from . particle import Particle
 import time
+from jax import random
+import jax.numpy as jnp
 
 class ParticleFilter(object):
     def __init__(self, states, weights, dynamics, sensor, k_neff):
@@ -11,17 +13,26 @@ class ParticleFilter(object):
         self._dynamics = dynamics
         self._sensor = sensor
         self._k_neff = k_neff
+        self._key = random.PRNGKey(0)
 
     def step(self, u, dt):
         #for each particle, use the given dynamics function to update its state
         start = time.time()
         for i in range(self._numberOfParticles):
+            self._key, subkey = random.split(self._key)
             self._states[i]= self._dynamics.stochasticstep(
-                self._states[i], u, dt)
-        # self._states = self._dynamics.batchstochasticstep(self._states,
+                subkey, self._states[i], u, dt)
+
+        # updating generation key
+        # self._key, subkey = random.split(self._key)
+
+        # #creating keys for each call
+        # subkeys = jnp.array(random.split(self._key, self._numberOfParticles))
+
+        # self._states = self._dynamics.batchstochasticstep(subkeys, self._states,
         #                                 np.vstack([u]*self._numberOfParticles),
         #                                                   dt)
-        print(time.time() - start)
+        # print(time.time() - start)
 
     def updateweights(self, z, oc = None):
         #for each particle, update its weight using bayes rule: p(x|z) =

@@ -96,8 +96,8 @@ while True:
         graph_ls = False
 
     #getting states and weights
-    # states = np.array(pf._states)
-    states = pf._states
+    states = np.array(pf._states)
+    # states = pf._states
     weights = pf._weights
 
     xg = np.array(x0)
