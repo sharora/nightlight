@@ -11,16 +11,10 @@ import time
 def computecost(x_t, obst_state, obst_radius, robot_radius):
     #finding the distance between the states
     x_trans = x_t - obst_state
-    X = np.array([
-        [1., 0., 0., 0., 0., 0.],
-        [0., 1., 0., 0., 0., 0.],
-        [0., 0., 0., 0., 0., 0.],
-        [0., 0., 0., 0., 0., 0.],
-        [0., 0., 0., 0., 0., 0.],
-        [0., 0., 0., 0., 0., 0.]
-        ])
+    dist = x_trans[0][0]**2 + x_trans[1][0]**2
+
+    #checking if robot is inside obstacle
     obst_radius += robot_radius
-    dist = (np.transpose(x_trans) @ X @ x_trans)[0][0]
     indicator =  np.heaviside(obst_radius**2 - dist, 0.5)
 
     c = dist / ((2*obst_radius)**2)
@@ -128,7 +122,7 @@ simulation_loop(x0, x_targ, ulis, obst_state, obst_radius, robot_length/2, dt, Q
 ulis_grad(x0, x_targ, ulis, obst_state, obst_radius, robot_length/2, dt, Q, R)
 
 numsteps = 1000
-lr = 0.001
+lr = 0.01
 
 start = time.time()
 #main optimization loop
@@ -139,9 +133,9 @@ for i in range(numsteps):
     #updating the weights
     ulis -= lr*ulis_g
     #showing current cost
-    # if(i % 10 == 0):
-    #     print(simulation_loop(x0, x_targ, ulis, obst_state, obst_radius, dt,
-    #                           Q, R))
+    if(i % 10 == 0):
+        print(simulation_loop(x0, x_targ, ulis, obst_state, obst_radius,
+                              robot_length/2, dt, Q, R))
 
 print(time.time() - start)
 
