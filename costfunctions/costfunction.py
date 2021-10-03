@@ -28,4 +28,3 @@ class CostFunction(object):
         """
         raise NotImplementedError()
 
-

@@ -1,11 +1,11 @@
 import jax.numpy as np
 import numpy as onp
-from jax import grad
-from jax import jit
+from jax import grad, jit
 import math
 import matplotlib.pyplot as plt
 from visualizer.visualizer import Visualizer
 from trajplanners.sgdplanner import GradientDescentPlanner
+from trajplanners.ilqrplanner import iLQRPlanner
 from dynamics.mecanumdrive import MecanumDrive
 from costfunctions.mecanumobstaclecost import MecanumObstacleCost
 import time
@@ -17,17 +17,17 @@ import time
 
 x0 = np.array([10., 70., 0., 0., 0., 0.])
 x_targ = np.array([100., 80., 0., 0., 0., 0.])
-obstacles = np.array([[72., 72., 20.], [72., 40., 20.]])
+obstacles = np.array([[72., 100., 1.]]) #, [72., 40., 20.], [72., 90., 20.]])
 
 robot_length = 18
 robot_radius = robot_length/2
 dt = 0.1
-T = 2
+T = 4
 h = int(T/dt)
 u_0 = np.array([1., 1., 0.])
 u = np.vstack([u_0]*h)
 
-gdsteps = 1000
+steps = 100
 lr = 0.01
 
 Q = 1*np.array([
@@ -46,7 +46,7 @@ Qf = 10*np.array([
     [0., 0., 0., 0., 0.1, 0.],
     [0., 0., 0., 0., 0., 0.1]
     ])
-R = 0.04*np.array([
+R = 0.01*np.array([
     [1.0, 0., 0.],
     [0., 1.0, 0.],
     [0., 0., 1.0]
@@ -56,12 +56,10 @@ R = 0.04*np.array([
 
 dynamics = MecanumDrive()
 costfunction = MecanumObstacleCost(robot_radius, obstacles, Q, R, Qf)
-gd_planner = GradientDescentPlanner(dynamics, costfunction, h, dt, lr)
-
-
+ilqr_planner = iLQRPlanner(dynamics, costfunction, h, dt, lr)
 
 start = time.time()
-u = gd_planner.optimizeTrajectory(u, x0, x_targ, gdsteps)
+u = ilqr_planner.optimizeTrajectory(u, x0, x_targ, steps)
 print(time.time() - start)
 
 #computing final trajectory using controls and displaying it

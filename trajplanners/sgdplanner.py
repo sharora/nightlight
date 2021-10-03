@@ -39,6 +39,7 @@ class GradientDescentPlanner(TrajectoryPlanner):
         for i in range(gdsteps):
             #calculating the gradient
             u_grad = self._u_grad(x0, u_init, x_targ)
+            print(u_grad.shape)
 
             #updating the weights
             u_init -= self._lr*u_grad

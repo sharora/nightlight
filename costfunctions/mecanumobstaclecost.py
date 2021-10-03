@@ -1,5 +1,5 @@
 from . costfunction import CostFunction
-from jax import jit
+from jax import jit, grad, hessian
 import jax.numpy as np
 from functools import partial
 import time
@@ -24,6 +24,15 @@ class MecanumObstacleCost(CostFunction):
         self._Q = Q
         self._R = R
         self._Qf = Qf
+
+        #defining gradient and hessian functions
+        self.g_x = jit(grad(self.getCost, argnums=0))
+        self.g_u = jit(grad(self.getCost, argnums=1))
+        self.g_xx = jit(hessian(self.getCost, argnums=0))
+        self.g_uu = jit(hessian(self.getCost, argnums=1))
+
+        self.G_x = jit(grad(self.getTerminalCost, argnums=0))
+        self.G_xx = jit(hessian(self.getTerminalCost, argnums=0))
 
     @partial(jit, static_argnums=(0,))
     def getCost(self, x, u, x_targ):
@@ -117,6 +126,14 @@ if __name__ == '__main__':
     u = np.array([0., 0., 0.])
 
     c = MecanumObstacleCost(robot_radius, obstacles, Q, R, Qf)
+
+    #gradient and hessian tests
+    print(c.g_x(x0, u, x_targ))
+    print(c.g_u(x0, u, x_targ))
+    print(c.g_xx(x0, u, x_targ))
+    print(c.g_uu(x0, u, x_targ))
+    print(c.G_x(x0, x_targ))
+    print(c.G_xx(x0, x_targ))
 
     start = time.time()
     print(c.getCost(x0, u, x_targ))
