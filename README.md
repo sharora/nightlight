@@ -8,7 +8,8 @@ https://user-images.githubusercontent.com/20748902/110386956-d455e680-8015-11eb-
 https://user-images.githubusercontent.com/20748902/110395960-fd7d7380-8023-11eb-86b7-6e79e1d78567.mp4
 
 ### Gradient Descent based Trajectory Optimization for Mecanum Robot
-![Screenshot from 2021-04-21 15-01-10](https://user-images.githubusercontent.com/20748902/115627171-673f9d00-a2b3-11eb-88f7-6ac691fdb5b4.png)
+https://user-images.githubusercontent.com/20748902/136463036-bb54199f-6b85-4676-8feb-09e0d9ae6efd.mp4
+
 
 
 
